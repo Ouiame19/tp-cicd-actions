@@ -1,22 +1,28 @@
 name: CI - Build & Test
-
-
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
   workflow_call:
+    secrets: 
+      SLACK_WEBHOOK:
+        required: false
   schedule:
-    - cron: '0 2 * * *'
+    - cron: '0 2 * * *' 
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 jobs:
   lint-and-test:
+    env: 
+      SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}-${{ matrix.node-version }}
+      cancel-in-progress: true
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    concurrency:
-      group: ci-${{ github.ref }}
-      cancel-in-progress: true
+
     strategy:
       matrix:
         node-version: [18, 20, 22]
@@ -48,10 +54,12 @@ jobs:
           retention-days: 7
 
       - name: Notifier Slack
-        if: always()
+        if: always() && matrix.node-version == 22 && env.SLACK_WEBHOOK != ''
         uses: slackapi/slack-github-action@v1.27.0
         with:
           payload: |
-            {"text": "CI ${{ job.status }} sur ${{ github.ref }}"}
+            {
+              "text": "CI ${{ job.status }} sur ${{ github.ref }}"
+            }
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_URL: ${{ env.SLACK_WEBHOOK }}
