@@ -3,7 +3,7 @@ return a + b;
 }
 function multiply(a, b) {
  return a * b;
-}
+}//factorial
 function factorial(n) {
  if (n < 0) throw new Error('Nombre négatif');
 if (n <= 1) return 1;
